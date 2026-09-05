@@ -1,0 +1,118 @@
+---
+title: "Classification Tree - SMOTE ANALYSIS_Oversampling"
+output: html_document
+date: "2025-06-08"
+---
+```{r}
+library(rpart)         
+library(caret)        
+library(dplyr)       
+```
+
+```{r}
+data= read.csv("C:/Users/megha/Vent-Flow-Project-files/cleaned_vent_flow_data.csv",stringsAsFactors = FALSE,check.names = FALSE)
+
+data$Classification=as.factor(data$Classification)
+sapply(data,class)
+```
+```{r}
+table(data$Classification)
+```
+```{r}
+library(smotefamily)
+data$Classification_num=as.numeric(data$Classification == "Serious")
+smote_output=SMOTE(X = data[, c("Flow_Rate_m3_day", "Stabilized_Shut_In_Pressure_kPa", "Source_Depth_mkb","Ground_Water_Base_mkb")],
+                      target = data$Classification_num, K =5)
+balanced_data=smote_output$data
+balanced_data$Classification=factor(ifelse(balanced_data$class == 1, "Serious", "Non Serious"))
+table(balanced_data$Classification)
+names(balanced_data)
+```
+```{r}
+set.seed(123)
+majority <- data[data$Classification == "Non Serious", ]
+minority <- data[data$Classification == "Serious", ]
+majority_down <- majority[sample(nrow(majority), nrow(minority)), ]
+balanced_data <- rbind(majority_down, minority)
+
+table(balanced_data$Classification)
+```
+
+
+
+
+### Stratified K-Fold Cross-Validation : As classes are imbalanced, it ensures fair model evaluation
+```{r}
+set.seed(123)  
+folds=createFolds(data$Classification, k = 5, list = TRUE, returnTrain = FALSE)
+```
+
+```{r}
+results=data.frame(Accuracy = numeric(), Fold = integer())
+
+for (i in 1:length(folds)) {
+  test_idx=folds[[i]]
+  test_data=balanced_data[test_idx, ]
+  train_data=balanced_data[-test_idx, ]
+  
+  model=rpart(Classification ~ Flow_Rate_m3_day +
+                Stabilized_Shut_In_Pressure_kPa+ 
+                Source_Depth_mkb + Ground_Water_Base_mkb,
+              data = train_data, method = "class")
+  
+  preds=predict(model, test_data, type = "class")#prediction
+  acc=mean(preds == test_data$Classification)#accuracy
+  
+  results=rbind(results, data.frame(Accuracy = acc, Fold
+                                       = i))
+}
+
+print(results)
+```
+```{r}
+#Average accuracy : model's performance on test/unseen data
+avg_acc=mean(results$Accuracy)
+cat("Mean Accuracy:", round(avg_acc, 3))
+```
+```{r}
+train_preds=predict(model, train_data, type = "class")
+train_acc=mean(train_preds == train_data$Classification)
+cat("Training Accuracy:", round(train_acc, 3))
+```
+
+
+```{r}
+confusionMatrix(preds, test_data$Classification)
+```
+
+
+
+```{r}
+library(rpart.plot)
+rpart.plot(model)
+```
+
+
+```{r}
+
+tree_model <- rpart(Classification ~ Flow_Rate_m3_day + Stabilized_Shut_In_Pressure_kPa + Source_Depth_mkb,
+                    data = balanced_data, method = "class", cp = 0.001)
+
+
+printcp(tree_model)
+plotcp(tree_model)
+
+# Choose optimal cp (lowest xerror)
+optimal_cp <- tree_model$cptable[which.min(tree_model$cptable[,"xerror"]), "CP"]
+
+# Prune the tree
+pruned_tree <- prune(tree_model, cp = optimal_cp)
+rpart.plot(pruned_tree)
+
+# Evaluate on test data (split your data if not already split)
+preds <- predict(pruned_tree, test_data, type = "class")
+confusionMatrix(preds, test_data$Classification)
+
+```
+
+

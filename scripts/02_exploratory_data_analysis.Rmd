@@ -1,0 +1,60 @@
+---
+title: "Exploratory Data Analysis - Vent-Flow Severity"
+output: html_document
+date: "2025-06-07"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggplot2)
+library(corrplot)
+library(gridExtra)
+
+# Read cleaned dataset
+df <- read.csv("C:/Users/megha/Vent-Flow-Project-files/cleaned_vent_flow_data.csv", stringsAsFactors = TRUE)
+str(df)
+summary(df)
+
+```
+
+```{r}
+# Evaluate class imbalance
+table(df$Classification)
+prop.table(table(df$Classification)) * 100
+
+ggplot(df, aes(x = Classification, fill = Classification)) +
+  geom_bar(width = 0.5) +
+  theme_minimal() +
+  scale_fill_manual(values = c("Non Serious" = "steelblue", "Serious" = "firebrick")) +
+  labs(title = "Vent-Flow Event Severity Distribution", 
+       x = "Event Classification", 
+       y = "Count")
+```
+
+
+```{r}
+p1 <- ggplot(df, aes(x = Classification, y = Flow_Rate_m3_day, fill = Classification)) +
+  geom_boxplot() +
+  scale_y_log10() +
+  theme_minimal() +
+  labs(title = "Flow Rate (Log Scale)", y = "m3/day")
+
+p2 <- ggplot(df, aes(x = Classification, y = Stabilized_Shut_In_Pressure_kPa, fill = Classification)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title = "Shut-In Pressure", y = "kPa")
+
+grid.arrange(p1, p2, ncol = 2)
+```
+```{r}
+table(df$Flow_Substance, df$Classification)
+
+ggplot(df, aes(x = Flow_Substance, fill = Classification)) +
+  geom_bar(position = "dodge") +
+  theme_minimal() +
+  labs(title = "Event Classification by Flow Substance", 
+       x = "Flow Substance", 
+       y = "Count")
+```
+

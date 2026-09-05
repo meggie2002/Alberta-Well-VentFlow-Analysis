@@ -1,0 +1,94 @@
+---
+title: "VentFlowGasMigrationReport_Basic_Cleaning"
+output:
+  pdf_document: default
+  html_document: default
+date: "2025-05-30"
+---
+
+Load the dataset and check the null values in catergoical and numerical columns
+```{r}
+df=read.csv("C:/Users/megha/Downloads/VentFlowGasMigrationReport.csv",stringsAsFactors = FALSE,check.names = FALSE)
+names(df)
+dim(df)
+library(dplyr)
+char_cols <- names(select_if(df, is.character))
+df <- df %>%
+  mutate(across(all_of(char_cols), ~ trimws(.))) %>%
+  mutate(across(all_of(char_cols), ~ na_if(., "")))
+colSums(is.na(df))
+dim(df)
+```
+```{r}
+df = na.omit(df)
+dim(df)
+```
+
+ Remove irrelevant columns
+```{r}
+irrelevant_columns=c("01.Report Date", "02.Licence Number", "04.Surface Location", "05.Bottom Location", "06.Original BA Id", "15.Resolution Date","16.Reported Resolution","03.Current Licence Status","07.Licensee at Reporting")
+
+df_filtered=df[ , !(names(df) %in% irrelevant_columns)]
+names(df_filtered)
+dim(df_filtered)
+```
+```{r}
+names(df_filtered) <- gsub("^\\d+\\.", "", names(df_filtered))
+names(df_filtered)
+```
+```{r}
+sapply(df_filtered, typeof)
+```
+
+```{r}
+table(df_filtered$Classification)
+```
+```{r}
+df_combined <- df_filtered %>%
+  mutate(Classification = ifelse(Classification == "Considered Non Serious", "Non Serious",Classification))
+table(df_combined$Classification)
+```
+## Class is imbalanced.
+```{r}
+unique(df_combined$Type)
+```
+```{r}
+unique(df_combined$`Flow Substance`)
+```
+```{r}
+summary(df_combined)
+```
+
+## Convert categorical features to factors.
+```{r}
+df_combined$Type=as.factor(df_combined$Type)
+df_combined$`Flow Substance`=as.factor(df_combined$`Flow Substance`)
+df_combined$Classification=as.factor(df_combined$Classification)
+```
+```{r}
+sapply(df_combined, typeof)
+```
+```{r}
+sapply(df_combined, class)
+```
+```{r}
+names(df_combined)=names(df_combined) |> 
+  gsub(" ", "_", x = _) |> 
+  gsub("\\(", "", x = _) |> 
+  gsub("\\)", "", x = _) |> 
+  gsub("/", "_", x = _)
+print(names(df_combined))
+```
+```{r}
+write.csv(df_combined, "C:/Users/megha/Downloads/cleaned_vent_flow_data.csv", row.names = FALSE)
+```
+
+
+
+
+
+
+
+
+ 
+ 

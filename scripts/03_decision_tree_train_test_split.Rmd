@@ -1,0 +1,105 @@
+---
+title: "Classification Tree - No K-fold Cross Validation"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+date: "2025-06-08"
+---
+```{r}
+#Necessary libraries
+library(rpart.plot)         
+library(caret)        
+library(dplyr) 
+```
+
+```{r}
+df= read.csv("C:/Users/megha/Vent-Flow-Project-files/cleaned_vent_flow_data.csv",stringsAsFactors = FALSE,check.names = FALSE)
+
+#Categorical columns converted to factor
+df$Classification=as.factor(df$Classification)
+df$Flow_Substance=as.factor(df$Flow_Substance)
+names(df)
+```
+```{r}
+#Removed rows with zero values
+num_col=c("Flow_Rate_m3_day", "Stabilized_Shut_In_Pressure_kPa", 
+             "Source_Depth_mkb", "Ground_Water_Base_mkb")
+df=df[!apply(df[,num_col]==0,1,all),]
+dim(df)
+```
+```{r}
+table(df$Classification)
+```
+```{r}
+# Setting seed for reproducibility
+set.seed(2024)  
+
+# Creating an empty vector to hold training indices
+train_indices=c()
+
+# Getting the unique classes
+classes=unique(df$Classification)# Loop over each class to sample proportionally
+for (class in classes) {
+  # Get row indices for this class 
+  class_indices=which(df$Classification == class)
+  # Number of samples to select for training (75%)
+  n_train=floor(0.75 * length(class_indices))
+  # Randomly sample training indices for this class
+  train_class_indices=sample(class_indices, n_train)
+  # Append to train_indices
+  train_indices=c(train_indices, train_class_indices)
+}
+
+# Creating train and test datasets
+train=df[train_indices, ]
+test=df[-train_indices, ]
+
+# Check class distribution
+table(train$Classification)
+table(test$Classification)
+```
+```{r}
+set.seed(2024)
+#Built model
+model_2=rpart(Classification ~ Flow_Rate_m3_day +
+                Stabilized_Shut_In_Pressure_kPa+ 
+                Source_Depth_mkb + Ground_Water_Base_mkb+Flow_Substance,
+              data = train,method = "class")
+```
+
+```{r}
+#Plot tree
+rpart.plot(model_2,fallen.leaves = TRUE)
+```
+
+```{r}
+#Predictions on test data
+test_preds_1=predict(model_2, test, type = "class")
+
+#test_preds_1=factor(test_preds_1, levels = levels(train$Classification))
+actual=factor(test$Classification, levels = levels(test$Classification))
+
+#Confusion matrix
+conf_mat_2=confusionMatrix(test_preds_1, actual)
+print(conf_mat_2)
+
+#Misclassification error
+misclass_error_3=1 - conf_mat_2$overall['Accuracy']
+cat("Misclassification Error:", round(misclass_error_3, 4), "\n")
+```
+
+
+
+```{r}
+#Train data accuracy
+train_preds_1=predict(model_2, train, type = "class")
+train_acc_1=mean(train_preds_1 == train$Classification)
+cat("Training Accuracy:", round(train_acc_1, 4))
+```
+
+
+
+
+## As class imbalance is there, there maybe be bais towards Non Serious (it has higher number of data)
+
