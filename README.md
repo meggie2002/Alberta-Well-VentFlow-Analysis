@@ -31,10 +31,11 @@ Surface Casing Vent Flow (SCVF) and Gas Migration (GM) events in oil and gas wel
 ---
 
 ## Analytical Workflow
-1. `01_data_cleaning_and_preprocessing.Rmd`: Data ingestion, handling missing values, standardizing column names, and category mapping.
-2. `02_exploratory_data_analysis.Rmd`: Evaluation of class imbalance ratios and continuous feature distributions.
-3. `03_decision_tree_10fold_cv.Rmd`: Decision tree model trained and evaluated with Stratified 10-Fold Cross-Validation.
-4. `04_smote_oversampling.Rmd`: SMOTE synthetic oversampling applied to mitigate minority class imbalance.
+1. `01_data_cleaning_and_preprocessing.Rmd`: Ingestion, string cleaning, category mapping, and output generation[cite: 10].
+2. `02_exploratory_data_analysis.Rmd`: Target variable class distributions and feature analysis[cite: 7, 10].
+3. `03_decision_tree_10fold_cv.Rmd`: Baseline decision tree trained with Stratified 10-Fold Cross-Validation[cite: 2].
+4. `04_smote_oversampling.Rmd` & `04_smote_undersampling.Rmd`: SMOTE resampling methods to mitigate class imbalance[cite: 4, 5].
+5. `04_smote_pruned_tree.Rmd`: Cost-complexity (`cp`) tree pruning and parameter tuning[cite: 6].
 
 ---
 
